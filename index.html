@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🏁 Turbo Race</title>
+    <title>🦆 Duck-Kart</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js">
     </script>
     <script type="importmap">
@@ -15,6 +15,7 @@
         }
     </script>
     <style>
+        /* ─── same styles as before ─── */
         * {
             margin: 0;
             padding: 0;
@@ -31,8 +32,6 @@
         canvas {
             display: block;
         }
-
-        /* ─── UI OVERLAY ─── */
         #ui {
             position: absolute;
             top: 0;
@@ -44,8 +43,6 @@
         #ui>* {
             pointer-events: auto;
         }
-
-        /* ─── MENU ─── */
         #menu {
             position: absolute;
             top: 50%;
@@ -150,8 +147,6 @@
             margin-top: 4px;
             min-height: 20px;
         }
-
-        /* ─── LOBBY ─── */
         #lobby {
             position: absolute;
             top: 50%;
@@ -264,6 +259,7 @@
             gap: 12px;
             justify-content: center;
             margin-top: 8px;
+            flex-wrap: wrap;
         }
         #lobby .lobby-actions button {
             padding: 12px 32px;
@@ -298,8 +294,6 @@
             font-size: 14px;
             margin-top: 10px;
         }
-
-        /* ─── HUD ─── */
         #hud {
             position: absolute;
             bottom: 30px;
@@ -377,8 +371,6 @@
             white-space: nowrap;
             letter-spacing: 0.5px;
         }
-
-        /* ─── COUNTDOWN ─── */
         #countdown {
             position: absolute;
             top: 50%;
@@ -397,8 +389,6 @@
             color: #4ade80;
             text-shadow: 0 0 80px rgba(74, 222, 128, 0.4);
         }
-
-        /* ─── FINISH ─── */
         #finish {
             position: absolute;
             top: 50%;
@@ -445,8 +435,6 @@
         #finish button:hover {
             background: #3a3a5e;
         }
-
-        /* ─── RESPONSIVE ─── */
         @media (max-width: 600px) {
             #menu {
                 padding: 32px 24px;
@@ -485,8 +473,6 @@
                 font-size: 28px;
             }
         }
-
-        /* ─── UTILITY ─── */
         .hidden {
             display: none !important;
         }
@@ -508,12 +494,9 @@
 </head>
 <body>
 
-    <!-- ─── UI CONTAINER ─── -->
     <div id="ui">
-
-        <!-- MENU -->
         <div id="menu">
-            <h1>🏁 Turbo Race</h1>
+            <h1>🦆 Duck-Kart</h1>
             <div class="sub">★ PEER-TO-PEER RACING ★</div>
             <div class="btn-group">
                 <button class="primary" id="btnHost">🚀 Host Race</button>
@@ -527,9 +510,8 @@
             <div class="info-text">Enter a 3‑letter code to join a friend's race</div>
         </div>
 
-        <!-- LOBBY -->
         <div id="lobby">
-            <h2>🏁 Lobby</h2>
+            <h2>🦆 Lobby</h2>
             <div class="room-code" id="lobbyCode">———</div>
             <div class="players-list" id="playersList"></div>
             <div class="map-vote">
@@ -543,10 +525,8 @@
             <div class="lobby-status" id="lobbyStatus">Waiting for players…</div>
         </div>
 
-        <!-- COUNTDOWN -->
         <div id="countdown">3</div>
 
-        <!-- HUD -->
         <div id="hud">
             <div class="hud-left">
                 <div class="speed">0 <span>km/h</span></div>
@@ -560,7 +540,6 @@
             <div class="controls-hint">WASD / Arrow Keys &nbsp;·&nbsp; C = Camera</div>
         </div>
 
-        <!-- FINISH -->
         <div id="finish">
             <h2>🏁 FINISH!</h2>
             <div class="finish-time" id="finishTime">0.00s</div>
@@ -569,7 +548,6 @@
         </div>
     </div>
 
-    <!-- ─── THREE.JS CANVAS ─── -->
     <div id="canvas-container"></div>
 
     <script type="module">
@@ -611,22 +589,23 @@
         const bestEl = $('#hud .best');
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  TRACK DEFINITIONS
+        //  TRACK DEFINITIONS – each with a unique layout
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const TRACKS = [{
             id: 'speedway',
             name: '🏁 Speedway',
             color: 0x2a4a7a,
             groundColor: 0x3a7a3a,
+            // Large oval
             waypoints: [
-                [-50, 0, 0],
-                [-35, 0, -35],
-                [0, 0, -45],
-                [35, 0, -35],
-                [50, 0, 0],
-                [35, 0, 35],
-                [0, 0, 45],
-                [-35, 0, 35]
+                [-60, 0, 0],
+                [-40, 0, -40],
+                [0, 0, -55],
+                [40, 0, -40],
+                [60, 0, 0],
+                [40, 0, 40],
+                [0, 0, 55],
+                [-40, 0, 40]
             ],
             desc: 'High-speed oval'
         }, {
@@ -634,15 +613,16 @@
             name: '🌲 Forest Trail',
             color: 0x2a6a2a,
             groundColor: 0x1a4a1a,
+            // Tight S‑curve / winding
             waypoints: [
-                [-40, 0, -20],
-                [-20, 0, -40],
-                [10, 0, -35],
-                [35, 0, -15],
-                [40, 0, 10],
-                [20, 0, 35],
-                [-10, 0, 40],
-                [-35, 0, 20]
+                [-30, 0, -20],
+                [-10, 0, -40],
+                [15, 0, -30],
+                [25, 0, -10],
+                [15, 0, 10],
+                [-10, 0, 25],
+                [-30, 0, 15],
+                [-20, 0, -5]
             ],
             desc: 'Winding forest path'
         }, {
@@ -650,44 +630,36 @@
             name: '🏜️ Desert Dash',
             color: 0x8a7a4a,
             groundColor: 0x6a5a3a,
+            // Figure‑8 style
             waypoints: [
-                [-45, 0, 0],
-                [-25, 0, -30],
-                [5, 0, -40],
-                [35, 0, -25],
-                [45, 0, 0],
-                [35, 0, 25],
-                [5, 0, 40],
-                [-25, 0, 30]
+                [-40, 0, 0],
+                [-20, 0, -30],
+                [0, 0, -20],
+                [20, 0, -30],
+                [40, 0, 0],
+                [20, 0, 30],
+                [0, 0, 20],
+                [-20, 0, 30]
             ],
-            desc: 'Sandy desert circuit'
+            desc: 'Figure‑8 desert circuit'
         }];
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  GAME STATE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const state = {
-            // UI
-            screen: 'menu', // menu | lobby | racing | finish
-
-            // Player
+            screen: 'menu',
             playerName: 'Player',
             isHost: false,
             isSinglePlayer: false,
-
-            // Room
             roomCode: '',
             peer: null,
             connections: [],
-            players: [], // { id, name, isHost, ... }
-
-            // Map
+            players: [],
             tracks: TRACKS,
             selectedMapId: 'speedway',
-            votes: {}, // peerId -> mapId
+            votes: {},
             mapVoteWinner: null,
-
-            // Racing
             racing: false,
             countdown: 0,
             countdownActive: false,
@@ -697,8 +669,6 @@
             bestTime: null,
             finished: false,
             startTime: null,
-
-            // Car
             carPos: new THREE.Vector3(0, 0.4, 0),
             carRot: 0,
             speed: 0,
@@ -709,15 +679,16 @@
             turnSpeed: 0.035,
             steerInput: 0,
             throttleInput: 0,
-
-            // Camera
-            cameraMode: 'third', // third | first
+            cameraMode: 'third',
             cameraAngle: 0,
-
-            // Network sync
             lastSync: 0,
             syncInterval: 50,
-            remoteCars: {}, // peerId -> { mesh, pos, rot, speed, lap, time }
+            remoteCars: {},
+            trackPath: null,
+            checkpoints: [],
+            startLine: null,
+            nextCheckpoint: 0,
+            currentTrackId: 'speedway',
         };
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -739,10 +710,8 @@
         renderer.toneMappingExposure = 1.2;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // ─── LIGHTS ───
         const ambientLight = new THREE.AmbientLight(0x334466, 0.6);
         scene.add(ambientLight);
-
         const dirLight = new THREE.DirectionalLight(0xffeedd, 1.8);
         dirLight.position.set(40, 60, 30);
         dirLight.castShadow = true;
@@ -755,73 +724,51 @@
         dirLight.shadow.camera.top = 80;
         dirLight.shadow.camera.bottom = -80;
         scene.add(dirLight);
-
         const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
         fillLight.position.set(-40, 20, -30);
         scene.add(fillLight);
-
         const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3a2a1a, 0.5);
         scene.add(hemi);
 
-        // ─── GROUND ───
         const groundGeo = new THREE.PlaneGeometry(300, 300);
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: 0x1a1a2e,
-            roughness: 0.9,
-            metalness: 0.0
-        });
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.9, metalness: 0.0 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -0.1;
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // ─── TRACK GROUP ───
         let trackGroup = new THREE.Group();
         scene.add(trackGroup);
-        let trackPath = null;
-        let checkpoints = [];
-        let startLine = null;
 
-        // ─── CAR ───
         const carGroup = new THREE.Group();
         scene.add(carGroup);
 
         function buildCar() {
             const g = new THREE.Group();
-
-            // Body
             const bodyGeo = new THREE.BoxGeometry(1.0, 0.3, 2.0);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff2222, roughness: 0.3, metalness: 0.6 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 0.35;
             body.castShadow = true;
             g.add(body);
-
-            // Cabin
             const cabGeo = new THREE.BoxGeometry(0.7, 0.25, 0.9);
             const cabMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.2, metalness: 0.2 });
             const cab = new THREE.Mesh(cabGeo, cabMat);
             cab.position.set(0, 0.6, -0.15);
             g.add(cab);
-
-            // Headlights
             const hlMat = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffff88, emissiveIntensity: 0.3 });
             for (let x of [-0.32, 0.32]) {
                 const hl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.08), hlMat);
                 hl.position.set(x, 0.3, 1.05);
                 g.add(hl);
             }
-
-            // Taillights
             const tlMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xff0000, emissiveIntensity: 0.5 });
             for (let x of [-0.32, 0.32]) {
                 const tl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.08), tlMat);
                 tl.position.set(x, 0.3, -1.05);
                 g.add(tl);
             }
-
-            // Wheels
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4, metalness: 0.7 });
             const wheelPos = [
@@ -840,8 +787,6 @@
                 rim.position.set(wp[0], wp[1], wp[2]);
                 g.add(rim);
             }
-
-            // Spoiler
             const spMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
             const sp = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.3), spMat);
             sp.position.set(0, 0.55, -1.05);
@@ -849,7 +794,6 @@
             const sp2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.04), spMat);
             sp2.position.set(0, 0.45, -1.05);
             g.add(sp2);
-
             return g;
         }
 
@@ -858,7 +802,6 @@
         carGroup.position.copy(state.carPos);
         carGroup.scale.set(0.8, 0.8, 0.8);
 
-        // ─── REMOTE CARS ───
         function createRemoteCar(color = 0x4488ff) {
             const g = new THREE.Group();
             const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.5 });
@@ -886,7 +829,6 @@
             return g;
         }
 
-        // ─── NAMETAGS ───
         const nameTagGroup = new THREE.Group();
         scene.add(nameTagGroup);
 
@@ -913,7 +855,6 @@
             return sprite;
         }
 
-        // ─── RESIZE ───
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -924,24 +865,21 @@
         //  TRACK GENERATION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function generateTrack(trackId) {
-            // Clear old
             while (trackGroup.children.length) {
                 const c = trackGroup.children[0];
                 trackGroup.remove(c);
                 if (c.geometry) c.geometry.dispose();
                 if (c.material) c.material.dispose();
             }
-            checkpoints = [];
-            trackPath = null;
+            state.checkpoints = [];
+            state.trackPath = null;
 
             const track = TRACKS.find(t => t.id === trackId) || TRACKS[0];
             const pts = track.waypoints.map(p => new THREE.Vector3(p[0], p[1] + 0.05, p[2]));
 
-            // Build CatmullRom
             const curve = new THREE.CatmullRomCurve3(pts, true);
-            trackPath = curve;
+            state.trackPath = curve;
 
-            // Sample points for road
             const numSegments = 120;
             const roadWidth = 3.2;
             const points = [];
@@ -954,44 +892,33 @@
                 tangents.push(tan);
             }
 
-            // Build road mesh
             const vertices = [];
             const indices = [];
             const uvs = [];
             const colors = [];
-
             const colorMain = new THREE.Color(track.color);
             const colorEdge = new THREE.Color(track.color).multiplyScalar(0.7);
 
             for (let i = 0; i < points.length; i++) {
                 const p = points[i];
                 const tan = tangents[i];
-                // perpendicular
                 const up = new THREE.Vector3(0, 1, 0);
                 const right = new THREE.Vector3().crossVectors(tan, up).normalize();
-                if (right.length() < 0.01) {
-                    right.set(1, 0, 0);
-                }
+                if (right.length() < 0.01) right.set(1, 0, 0);
                 right.normalize();
-
                 const halfW = roadWidth / 2;
                 const left = p.clone().add(right.clone().multiplyScalar(-halfW));
                 const rightP = p.clone().add(right.clone().multiplyScalar(halfW));
-
-                // Slight height variation for road edge
                 const edgeHeight = 0.02;
                 vertices.push(left.x, left.y + edgeHeight, left.z);
                 vertices.push(rightP.x, rightP.y + edgeHeight, rightP.z);
-
                 const u = i / points.length;
                 uvs.push(u, 0);
                 uvs.push(u, 1);
-
                 const c = i % 2 === 0 ? colorMain : colorEdge;
                 colors.push(c.r, c.g, c.b);
                 colors.push(c.r, c.g, c.b);
             }
-
             for (let i = 0; i < points.length - 1; i++) {
                 const a = i * 2,
                     b = i * 2 + 1,
@@ -1000,13 +927,11 @@
                 indices.push(a, c, b);
                 indices.push(b, c, d);
             }
-
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
             geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
             geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             geo.computeVertexNormals();
-
             const mat = new THREE.MeshStandardMaterial({
                 vertexColors: true,
                 roughness: 0.7,
@@ -1018,7 +943,7 @@
             road.castShadow = true;
             trackGroup.add(road);
 
-            // ─── Road markings (center dashes) ───
+            // dashes
             const dashMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
             for (let i = 0; i < points.length; i += 4) {
                 const p = points[i];
@@ -1037,18 +962,9 @@
                 trackGroup.add(dash);
             }
 
-            // ─── Barriers ───
-            const barrierMat = new THREE.MeshStandardMaterial({
-                color: 0xcc4444,
-                roughness: 0.6,
-                metalness: 0.2
-            });
-            const barrierMat2 = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                roughness: 0.6,
-                metalness: 0.1
-            });
-
+            // barriers
+            const barrierMat = new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.6, metalness: 0.2 });
+            const barrierMat2 = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.1 });
             for (let side = -1; side <= 1; side += 2) {
                 for (let i = 0; i < points.length; i += 2) {
                     const p = points[i];
@@ -1063,7 +979,6 @@
                     barrier.position.y += 0.2;
                     barrier.castShadow = true;
                     trackGroup.add(barrier);
-                    // white stripe
                     const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.15), barrierMat2);
                     stripe.position.copy(pos);
                     stripe.position.y += 0.4;
@@ -1071,8 +986,8 @@
                 }
             }
 
-            // ─── Checkpoints ───
-            checkpoints = [];
+            // checkpoints
+            state.checkpoints = [];
             const cpCount = 6;
             for (let i = 0; i < cpCount; i++) {
                 const t = i / cpCount;
@@ -1082,8 +997,6 @@
                 const right = new THREE.Vector3().crossVectors(tan, up).normalize();
                 if (right.length() < 0.01) right.set(1, 0, 0);
                 right.normalize();
-
-                // Checkpoint gate
                 const cpMat = new THREE.MeshStandardMaterial({
                     color: i === 0 ? 0x4ade80 : 0xffd200,
                     transparent: true,
@@ -1099,8 +1012,6 @@
                 cp.rotation.y = -angle;
                 cp.rotation.x = -Math.PI / 2;
                 trackGroup.add(cp);
-
-                // Pillars
                 const pillarMat = new THREE.MeshStandardMaterial({ color: 0xffd200, roughness: 0.5 });
                 for (let s of [-1, 1]) {
                     const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 6), pillarMat);
@@ -1109,8 +1020,7 @@
                     pillar.position.y += 1.2;
                     trackGroup.add(pillar);
                 }
-
-                checkpoints.push({
+                state.checkpoints.push({
                     position: p.clone(),
                     tangent: tan.clone(),
                     right: right.clone(),
@@ -1119,7 +1029,7 @@
                 });
             }
 
-            // ─── Start / Finish line ───
+            // finish line
             const startP = curve.getPoint(0);
             const startTan = curve.getTangent(0);
             const startUp = new THREE.Vector3(0, 1, 0);
@@ -1127,7 +1037,6 @@
             if (startRight.length() < 0.01) startRight.set(1, 0, 0);
             startRight.normalize();
 
-            // Finish line texture
             const finishCanvas = document.createElement('canvas');
             finishCanvas.width = 256;
             finishCanvas.height = 64;
@@ -1159,46 +1068,40 @@
             finishMesh.rotation.y = -fAngle;
             finishMesh.rotation.x = -Math.PI / 2;
             trackGroup.add(finishMesh);
-            startLine = startP.clone();
+            state.startLine = startP.clone();
 
-            // ─── Scenery: trees or cacti ───
+            // scenery
             const isDesert = trackId === 'desert';
             const isForest = trackId === 'forest';
-
             for (let i = 0; i < 80; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const dist = 10 + Math.random() * 40;
                 const x = Math.cos(angle) * dist;
                 const z = Math.sin(angle) * dist;
-                // Check distance to track
                 let tooClose = false;
                 for (const p of points) {
                     if (new THREE.Vector3(x, 0, z).distanceTo(p) < 5) { tooClose = true; break; }
                 }
                 if (tooClose) continue;
-
                 if (isDesert) {
-                    // Cactus
                     const cMat = new THREE.MeshStandardMaterial({ color: 0x2a5a2a, roughness: 0.8 });
                     const c = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 0.8 + Math.random() * 1.2, 6), cMat);
                     c.position.set(x, 0.4, z);
                     c.castShadow = true;
                     trackGroup.add(c);
-                    // arms
                     for (let a = 0; a < 2; a++) {
                         const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.4 + Math.random() * 0.3, 5),
-                        cMat);
+                            cMat);
                         arm.position.set(x + (Math.random() > 0.5 ? 0.3 : -0.3), 0.6 + Math.random() * 0.3, z);
                         arm.rotation.z = (Math.random() > 0.5 ? 0.3 : -0.3);
                         arm.castShadow = true;
                         trackGroup.add(arm);
                     }
                 } else if (isForest) {
-                    // Tree
                     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.9 });
                     const leafMat = new THREE.MeshStandardMaterial({ color: 0x2a7a2a, roughness: 0.8 });
                     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 1.0 + Math.random() * 0.8, 6),
-                    trunkMat);
+                        trunkMat);
                     trunk.position.set(x, 0.5, z);
                     trunk.castShadow = true;
                     trackGroup.add(trunk);
@@ -1207,7 +1110,6 @@
                     leaf.castShadow = true;
                     trackGroup.add(leaf);
                 } else {
-                    // Speedway: street lights or cones
                     if (i % 3 === 0) {
                         const coneMat = new THREE.MeshStandardMaterial({ color: 0xff6622, roughness: 0.7 });
                         const cone = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 6), coneMat);
@@ -1218,16 +1120,10 @@
                 }
             }
 
-            // ─── Ground color ───
             ground.material.color.setHex(track.groundColor || 0x1a1a2e);
-
-            // ─── Store track data ───
             state.currentTrackId = trackId;
-            state.checkpoints = checkpoints;
-            state.trackPath = trackPath;
-            state.startLine = startLine;
 
-            // Place car at start
+            // place car at start
             const startPos = curve.getPoint(0);
             const startTan2 = curve.getTangent(0);
             state.carPos.copy(startPos);
@@ -1236,7 +1132,6 @@
             carGroup.position.copy(state.carPos);
             carGroup.rotation.y = state.carRot;
 
-            // Reset checkpoints
             state.nextCheckpoint = 0;
             state.lapCount = 0;
             state.raceTime = 0;
@@ -1250,14 +1145,12 @@
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateCar(delta) {
             if (!state.racing || state.countdownActive || state.finished) {
-                // Still allow steering in lobby?
                 return;
             }
 
             const dt = Math.min(delta, 0.05);
             const s = state;
 
-            // Throttle
             let accel = 0;
             if (s.throttleInput > 0) {
                 accel = s.acceleration * s.throttleInput;
@@ -1265,39 +1158,32 @@
                 accel = -s.braking * Math.abs(s.throttleInput);
             }
 
-            // Friction
             let friction = s.friction;
             if (s.speed > 0) friction += 0.005;
             else if (s.speed < 0) friction += 0.005;
 
-            // Speed
             s.speed += accel * dt;
             if (s.speed > s.maxSpeed) s.speed = s.maxSpeed;
             if (s.speed < -s.maxSpeed * 0.4) s.speed = -s.maxSpeed * 0.4;
 
-            // Apply friction
             if (s.speed > 0.01) s.speed -= friction * dt * 2;
             else if (s.speed < -0.01) s.speed += friction * dt * 2;
             else s.speed = 0;
 
-            // Steering
             const steerAmount = s.steerInput * s.turnSpeed * (0.6 + 0.4 * (s.speed / s.maxSpeed));
             s.carRot += steerAmount * dt * 4;
 
-            // Move
             const moveX = Math.sin(s.carRot) * s.speed * dt;
             const moveZ = Math.cos(s.carRot) * s.speed * dt;
             s.carPos.x += moveX;
             s.carPos.z += moveZ;
 
-            // Clamp to track (simple: stay on path)
             if (s.trackPath) {
                 const nearest = s.trackPath.getPoint(
                     s.trackPath.getClosestPoint(s.carPos, new THREE.Vector3())
                 );
                 const dist = s.carPos.distanceTo(nearest);
                 if (dist > 4.0) {
-                    // Push back toward track
                     const dir = new THREE.Vector3().subVectors(nearest, s.carPos).normalize();
                     s.carPos.x += dir.x * dt * 2.0;
                     s.carPos.z += dir.z * dt * 2.0;
@@ -1305,14 +1191,12 @@
                 }
             }
 
-            // Checkpoint detection
             if (s.checkpoints && s.checkpoints.length > 0 && !s.finished) {
                 const nextIdx = s.nextCheckpoint % s.checkpoints.length;
                 const cp = s.checkpoints[nextIdx];
                 const toCar = new THREE.Vector3().subVectors(s.carPos, cp.position);
                 const dist2 = toCar.length();
                 if (dist2 < cp.radius) {
-                    // Check direction
                     const forward = new THREE.Vector3(Math.sin(s.carRot), 0, Math.cos(s.carRot));
                     const dirToCp = new THREE.Vector3().subVectors(cp.position, s.carPos).normalize();
                     const dot = forward.dot(dirToCp);
@@ -1328,18 +1212,12 @@
                 }
             }
 
-            // Update car mesh
             carGroup.position.copy(s.carPos);
             carGroup.rotation.y = s.carRot;
-
-            // Tilt
             const tilt = -s.steerInput * 0.12 * (s.speed / s.maxSpeed);
             carGroup.rotation.z = tilt;
-
-            // Slight bounce
             carGroup.position.y = 0.4 + Math.sin(Date.now() * 0.003 + s.carPos.x) * 0.02;
 
-            // Update HUD
             const speedKmh = Math.abs(s.speed * 12);
             speedEl.innerHTML = `${Math.round(speedKmh)} <span>km/h</span>`;
             lapEl.textContent = `LAP ${Math.min(s.lapCount + 1, s.maxLaps)} / ${s.maxLaps}`;
@@ -1350,9 +1228,6 @@
             }
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  FINISH RACE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function finishRace() {
             if (state.finished) return;
             state.finished = true;
@@ -1361,7 +1236,6 @@
             const time = state.raceTime;
             finishTime.textContent = `${time.toFixed(2)}s`;
 
-            // Best time (localStorage)
             const key = `best_${state.currentTrackId}`;
             const stored = localStorage.getItem(key);
             let isBest = false;
@@ -1377,23 +1251,15 @@
                 finishBest.textContent = `🏆 Best: ${best.toFixed(2)}s`;
                 finishBest.style.color = '#ffd200';
             }
-
-            // Update HUD
             bestEl.textContent = isBest ? '🏆 New Best!' : `🏆 Best: ${(state.bestTime || 0).toFixed(2)}s`;
-
             finish.style.display = 'block';
             hud.style.display = 'none';
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  CAMERA
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateCamera() {
             const pos = state.carPos;
             const rot = state.carRot;
-
             if (state.cameraMode === 'first') {
-                // First person
                 const height = 0.9;
                 const lookAhead = 3.0;
                 const camPos = pos.clone();
@@ -1405,17 +1271,12 @@
                 target.y += 0.2;
                 camera.lookAt(target);
             } else {
-                // Third person
                 const dist = 6.5;
                 const height = 4.5;
                 const angle = rot;
                 const xOff = -Math.sin(angle) * dist;
                 const zOff = -Math.cos(angle) * dist;
-                camera.position.set(
-                    pos.x + xOff,
-                    pos.y + height,
-                    pos.z + zOff
-                );
+                camera.position.set(pos.x + xOff, pos.y + height, pos.z + zOff);
                 camera.lookAt(pos.x, pos.y + 0.5, pos.z);
             }
         }
@@ -1426,11 +1287,9 @@
         const keys = {};
         document.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
-
             if (e.key.toLowerCase() === 'c' && state.racing) {
                 state.cameraMode = state.cameraMode === 'third' ? 'first' : 'third';
             }
-
             if (e.key === ' ' && state.racing) {
                 e.preventDefault();
             }
@@ -1443,9 +1302,7 @@
             const s = state;
             s.steerInput = 0;
             s.throttleInput = 0;
-
             if (!s.racing || s.countdownActive || s.finished) return;
-
             if (keys['arrowleft'] || keys['a']) s.steerInput = -1;
             if (keys['arrowright'] || keys['d']) s.steerInput = 1;
             if (keys['arrowup'] || keys['w']) s.throttleInput = 1;
@@ -1453,89 +1310,59 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  PEER.JS NETWORKING
+        //  PEER.JS NETWORKING (simplified for brevity – same as before)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let peer = null;
         let connections = [];
         let isHost = false;
         let roomCode = '';
         let playerId = '';
-        let players = []; // { id, name, isHost }
+        let players = [];
         let myVote = null;
 
         function generateRoomCode() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             let code = '';
-            for (let i = 0; i < 3; i++) {
-                code += chars[Math.floor(Math.random() * chars.length)];
-            }
+            for (let i = 0; i < 3; i++) code += chars[Math.floor(Math.random() * chars.length)];
             return code;
         }
 
         function initPeer() {
             return new Promise((resolve, reject) => {
                 const id = 'racer-' + Math.random().toString(36).substring(2, 8);
-                const p = new Peer(id, {
-                    debug: 0,
-                });
-                p.on('open', () => {
-                    playerId = p.id;
-                    resolve(p);
-                });
-                p.on('error', (err) => {
-                    reject(err);
-                });
+                const p = new Peer(id, { debug: 0 });
+                p.on('open', () => { playerId = p.id;
+                    resolve(p); });
+                p.on('error', (err) => reject(err));
             });
         }
 
-        // ─── HOST LOGIC ───
         function hostRoom(code) {
             roomCode = code.toUpperCase();
             isHost = true;
             state.isHost = true;
             players = [{ id: playerId, name: state.playerName, isHost: true }];
-
             peer.on('connection', (conn) => {
                 connections.push(conn);
                 conn.on('data', (data) => handlePeerData(conn, data));
-                // Send initial state
-                sendTo(conn, {
-                    type: 'init',
-                    players: players,
-                    roomCode: roomCode,
-                    hostId: playerId,
-                    trackId: state.currentTrackId || 'speedway',
-                });
-                // Add player
-                const newPlayer = { id: conn.peer, name: 'Racer', isHost: false };
-                // Wait for handshake
+                sendTo(conn, { type: 'init', players, roomCode, hostId: playerId, trackId: state.currentTrackId || 'speedway' });
             });
-
             showLobby();
             broadcastState();
         }
 
-        // ─── JOIN LOGIC ───
         async function joinRoom(code) {
             roomCode = code.toUpperCase();
             isHost = false;
             state.isHost = false;
-
             try {
                 const conn = peer.connect(roomCode);
                 connections.push(conn);
                 conn.on('data', (data) => handlePeerData(conn, data));
                 conn.on('open', () => {
-                    // Send join
-                    sendTo(conn, {
-                        type: 'join',
-                        id: playerId,
-                        name: state.playerName,
-                    });
+                    sendTo(conn, { type: 'join', id: playerId, name: state.playerName });
                 });
-                conn.on('close', () => {
-                    removePlayer(conn.peer);
-                });
+                conn.on('close', () => removePlayer(conn.peer));
                 showLobby();
             } catch (err) {
                 menuError.textContent = '❌ Could not join room. Check the code.';
@@ -1543,39 +1370,28 @@
             }
         }
 
-        // ─── HANDLE PEER DATA ───
         function handlePeerData(conn, data) {
             const senderId = conn.peer;
-
             switch (data.type) {
                 case 'join':
                     if (isHost) {
-                        const newP = { id: data.id, name: data.name || 'Racer', isHost: false };
-                        players.push(newP);
+                        players.push({ id: data.id, name: data.name || 'Racer', isHost: false });
                         broadcastState();
                         updateLobbyUI();
                     }
                     break;
-
                 case 'init':
-                    // Client received init
                     players = data.players || [];
                     state.currentTrackId = data.trackId || 'speedway';
                     updateLobbyUI();
                     break;
-
                 case 'state':
-                    // Host broadcasts state
                     players = data.players || [];
                     state.votes = data.votes || {};
                     state.currentTrackId = data.trackId || state.currentTrackId;
-                    if (data.racing) {
-                        // Race started
-                        startRace();
-                    }
+                    if (data.racing) startRace();
                     updateLobbyUI();
                     break;
-
                 case 'vote':
                     if (isHost) {
                         state.votes[senderId] = data.mapId;
@@ -1584,16 +1400,10 @@
                         checkVotes();
                     }
                     break;
-
                 case 'startRace':
-                    if (isHost) {
-                        // Host starts
-                        startCountdown();
-                    }
+                    startCountdown(); // Fix: Clients must also execute the countdown
                     break;
-
                 case 'carUpdate':
-                    // Remote car position
                     if (senderId !== playerId) {
                         const pos = new THREE.Vector3(data.x, data.y, data.z);
                         const rot = data.rot;
@@ -1603,59 +1413,33 @@
                         updateRemoteCar(senderId, pos, rot, speed, lap, time);
                     }
                     break;
-
                 case 'playerLeft':
                     removePlayer(data.id);
                     break;
-
-                case 'finish':
-                    if (senderId !== playerId) {
-                        // Someone finished
-                        // Just show a message? We'll handle it.
-                    }
-                    break;
             }
         }
 
-        // ─── BROADCAST ───
         function broadcastState() {
-            const data = {
-                type: 'state',
-                players: players,
-                votes: state.votes,
-                trackId: state.currentTrackId,
-                racing: state.racing,
-            };
-            for (const conn of connections) {
-                if (conn.open) {
-                    sendTo(conn, data);
-                }
-            }
+            const data = { type: 'state', players, votes: state.votes, trackId: state.currentTrackId, racing: state.racing };
+            for (const conn of connections)
+                if (conn.open) sendTo(conn, data);
         }
 
         function sendTo(conn, data) {
-            try {
-                conn.send(data);
-            } catch (e) { /* ignore */ }
+            try { conn.send(data); } catch (e) {}
         }
 
         function broadcast(data) {
-            for (const conn of connections) {
-                if (conn.open) {
-                    sendTo(conn, data);
-                }
-            }
+            for (const conn of connections)
+                if (conn.open) sendTo(conn, data);
         }
 
-        // ─── PLAYER MANAGEMENT ───
         function removePlayer(id) {
             players = players.filter(p => p.id !== id);
             delete state.votes[id];
             if (state.remoteCars[id]) {
                 scene.remove(state.remoteCars[id].mesh);
-                if (state.remoteCars[id].tag) {
-                    scene.remove(state.remoteCars[id].tag);
-                }
+                if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
                 delete state.remoteCars[id];
             }
             broadcastState();
@@ -1664,7 +1448,6 @@
 
         function updateRemoteCar(id, pos, rot, speed, lap, time) {
             if (!state.remoteCars[id]) {
-                // Create remote car
                 const color = 0x4488ff + (parseInt(id.substring(id.length - 3), 36) % 8) * 0x224466;
                 const mesh = createRemoteCar(color);
                 mesh.position.copy(pos);
@@ -1690,31 +1473,22 @@
             }
         }
 
-        // ─── VOTING ───
         function checkVotes() {
             if (!isHost) return;
             const allVoted = players.every(p => state.votes[p.id] !== undefined);
             if (allVoted && players.length > 0) {
-                // Count votes
                 const counts = {};
-                for (const v of Object.values(state.votes)) {
-                    counts[v] = (counts[v] || 0) + 1;
-                }
-                let maxCount = 0;
-                let winner = null;
-                for (const [mapId, count] of Object.entries(counts)) {
-                    if (count > maxCount) {
-                        maxCount = count;
-                        winner = mapId;
-                    }
-                }
+                for (const v of Object.values(state.votes)) counts[v] = (counts[v] || 0) + 1;
+                let maxCount = 0,
+                    winner = null;
+                for (const [mapId, count] of Object.entries(counts))
+                    if (count > maxCount) { maxCount = count;
+                        winner = mapId; }
                 if (winner) {
                     state.mapVoteWinner = winner;
                     state.currentTrackId = winner;
-                    // Update track
                     generateTrack(winner);
                     updateLobbyUI();
-                    // Enable start button
                     btnStart.disabled = false;
                     lobbyStatus.textContent = `✅ Map selected! Press "Start Race" to begin.`;
                 }
@@ -1734,26 +1508,18 @@
             lobby.style.display = 'block';
             lobbyCode.textContent = roomCode || '———';
             updateLobbyUI();
-            // Show map options
             mapOptions.innerHTML = '';
             for (const track of TRACKS) {
                 const btn = document.createElement('button');
                 btn.textContent = track.name;
                 btn.dataset.mapId = track.id;
-                if (state.currentTrackId === track.id) {
-                    btn.classList.add('voted');
-                }
+                if (state.currentTrackId === track.id) btn.classList.add('voted');
                 btn.addEventListener('click', () => {
                     if (state.racing) return;
                     myVote = track.id;
                     state.votes[playerId] = track.id;
-                    // Send vote
-                    for (const conn of connections) {
-                        if (conn.open) {
-                            sendTo(conn, { type: 'vote', mapId: track.id });
-                        }
-                    }
-                    // If host, update local
+                    for (const conn of connections)
+                        if (conn.open) sendTo(conn, { type: 'vote', mapId: track.id });
                     if (isHost) {
                         state.votes[playerId] = track.id;
                         broadcastState();
@@ -1763,26 +1529,20 @@
                 });
                 mapOptions.appendChild(btn);
             }
-            // If host, show start
             btnStart.style.display = isHost ? 'inline-block' : 'none';
             btnStart.disabled = true;
-            if (isHost) {
-                lobbyStatus.textContent = `👑 You are the host. Waiting for players...`;
-            } else {
-                lobbyStatus.textContent = `🔗 Connected to ${roomCode}. Waiting for host...`;
-            }
-            // If single player, auto-start
+            if (isHost) lobbyStatus.textContent = `👑 You are the host. Waiting for players...`;
+            else lobbyStatus.textContent = `🔗 Connected to ${roomCode}. Waiting for host...`;
+
             if (state.isSinglePlayer) {
                 btnStart.style.display = 'none';
                 lobbyStatus.textContent = '🏁 Single player mode. Select a map and start!';
                 btnStart.disabled = false;
                 btnStart.textContent = '🏁 Start Race';
-                // Auto-select first map
                 if (!myVote) {
                     myVote = TRACKS[0].id;
                     state.votes[playerId] = myVote;
                 }
-                // Show start button for single player
                 const spStart = document.createElement('button');
                 spStart.className = 'start-btn';
                 spStart.textContent = '🏁 Start Race';
@@ -1802,45 +1562,28 @@
         }
 
         function updateLobbyUI() {
-            // Players
             playersList.innerHTML = '';
             for (const p of players) {
                 const chip = document.createElement('div');
                 chip.className = 'player-chip';
                 chip.innerHTML = `${p.name || 'Racer'}`;
-                if (p.isHost) {
-                    chip.innerHTML += ` <span class="host-badge">HOST</span>`;
-                }
-                if (p.id === playerId) {
-                    chip.innerHTML += ` <span class="you-badge">YOU</span>`;
-                }
-                // Vote indicator
+                if (p.isHost) chip.innerHTML += ` <span class="host-badge">HOST</span>`;
+                if (p.id === playerId) chip.innerHTML += ` <span class="you-badge">YOU</span>`;
                 const voted = state.votes[p.id];
                 if (voted) {
                     const track = TRACKS.find(t => t.id === voted);
-                    if (track) {
-                        chip.innerHTML += ` 🗳️${track.name.replace(/[^\w]/g, '')}`;
-                    }
+                    if (track) chip.innerHTML += ` 🗳️${track.name.replace(/[^\w]/g, '')}`;
                 }
                 playersList.appendChild(chip);
             }
-
-            // Map vote buttons
             const mapBtns = mapOptions.querySelectorAll('button');
             for (const btn of mapBtns) {
                 const id = btn.dataset.mapId;
                 btn.classList.remove('voted', 'winner');
-                if (state.votes[playerId] === id) {
-                    btn.classList.add('voted');
-                }
-                if (state.mapVoteWinner === id) {
-                    btn.classList.add('winner');
-                }
-                // Disable if racing
+                if (state.votes[playerId] === id) btn.classList.add('voted');
+                if (state.mapVoteWinner === id) btn.classList.add('winner');
                 btn.disabled = state.racing;
             }
-
-            // Start button
             if (isHost) {
                 const allVoted = players.every(p => state.votes[p.id] !== undefined);
                 btnStart.disabled = !allVoted || state.racing || players.length < 1;
@@ -1863,7 +1606,6 @@
             countdownEl.style.display = 'block';
             countdownEl.className = '';
 
-            // Reset car position
             if (state.trackPath) {
                 const startP = state.trackPath.getPoint(0);
                 state.carPos.copy(startP);
@@ -1880,15 +1622,11 @@
             state.finished = false;
             state.startTime = null;
 
-            // Broadcast start
-            if (isHost) {
-                broadcast({ type: 'startRace' });
-            }
+            if (isHost) broadcast({ type: 'startRace' });
 
             let count = 3;
             countdownEl.textContent = count;
             countdownEl.style.display = 'block';
-
             if (countdownInterval) clearInterval(countdownInterval);
             countdownInterval = setInterval(() => {
                 count--;
@@ -1907,7 +1645,6 @@
                     lobby.style.display = 'none';
                     hud.style.display = 'flex';
                     finish.style.display = 'none';
-                    // Update HUD
                     state.raceTime = 0;
                     timeEl.textContent = '⏱ 0.00s';
                     lapEl.textContent = `LAP 1 / ${state.maxLaps}`;
@@ -1917,7 +1654,6 @@
                     } else {
                         bestEl.textContent = '🏆 Best: —';
                     }
-                    // Remove remote cars from lobby
                     for (const id of Object.keys(state.remoteCars)) {
                         scene.remove(state.remoteCars[id].mesh);
                         if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
@@ -1927,10 +1663,7 @@
             }, 1000);
         }
 
-        function startRace() {
-            // Called from network
-            startCountdown();
-        }
+        function startRace() { startCountdown(); }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  SINGLE PLAYER
@@ -1946,25 +1679,17 @@
             state.votes = {};
             state.votes[playerId] = state.currentTrackId;
             state.mapVoteWinner = state.currentTrackId;
-
-            // Generate track
             generateTrack(state.currentTrackId);
-
-            // Show lobby with single player mode
             menu.style.display = 'none';
             lobby.style.display = 'block';
             lobbyCode.textContent = 'SOLO';
             updateLobbyUI();
-
-            // Show map options
             mapOptions.innerHTML = '';
             for (const track of TRACKS) {
                 const btn = document.createElement('button');
                 btn.textContent = track.name;
                 btn.dataset.mapId = track.id;
-                if (state.currentTrackId === track.id) {
-                    btn.classList.add('voted');
-                }
+                if (state.currentTrackId === track.id) btn.classList.add('voted');
                 btn.addEventListener('click', () => {
                     if (state.racing) return;
                     state.currentTrackId = track.id;
@@ -1975,10 +1700,8 @@
                 });
                 mapOptions.appendChild(btn);
             }
-
             lobbyStatus.textContent = '🏁 Select a map and press "Start Race"';
             btnStart.style.display = 'none';
-            // Add start button
             const actions = document.querySelector('.lobby-actions');
             let spBtn = actions.querySelector('.sp-start');
             if (!spBtn) {
@@ -1997,7 +1720,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  NETWORK SYNC (car positions)
+        //  NETWORK SYNC
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function syncCar() {
             if (!state.racing || state.finished) return;
@@ -2011,11 +1734,8 @@
                 lap: state.lapCount,
                 time: state.raceTime,
             };
-            for (const conn of connections) {
-                if (conn.open) {
-                    sendTo(conn, data);
-                }
-            }
+            for (const conn of connections)
+                if (conn.open) sendTo(conn, data);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2051,7 +1771,6 @@
 
         joinCode.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') btnJoin.click();
-            // Auto uppercase
             setTimeout(() => {
                 joinCode.value = joinCode.value.toUpperCase().replace(/[^A-Z]/g, '');
             }, 10);
@@ -2059,9 +1778,7 @@
 
         btnSinglePlayer.addEventListener('click', () => {
             peer = new Peer('solo-' + Math.random().toString(36).substring(2, 8), { debug: 0 });
-            peer.on('open', () => {
-                startSinglePlayer();
-            });
+            peer.on('open', () => { startSinglePlayer(); });
             peer.on('error', () => {});
         });
 
@@ -2074,11 +1791,8 @@
         });
 
         btnLeaveLobby.addEventListener('click', () => {
-            // Clean up
-            if (peer) {
-                peer.destroy();
-                peer = null;
-            }
+            if (peer) { peer.destroy();
+                peer = null; }
             connections = [];
             players = [];
             state.racing = false;
@@ -2089,7 +1803,6 @@
             finish.style.display = 'none';
             hud.style.display = 'none';
             countdownEl.style.display = 'none';
-            // Remove remote cars
             for (const id of Object.keys(state.remoteCars)) {
                 scene.remove(state.remoteCars[id].mesh);
                 if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
@@ -2108,10 +1821,8 @@
             state.finished = false;
             state.isSinglePlayer = false;
             state.isHost = false;
-            if (peer) {
-                peer.destroy();
-                peer = null;
-            }
+            if (peer) { peer.destroy();
+                peer = null; }
             connections = [];
             players = [];
             for (const id of Object.keys(state.remoteCars)) {
@@ -2119,7 +1830,6 @@
                 if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
                 delete state.remoteCars[id];
             }
-            // Reset car
             state.carPos.set(0, 0.4, 0);
             state.carRot = 0;
             carGroup.position.copy(state.carPos);
@@ -2137,38 +1847,24 @@
         function gameLoop(time) {
             const delta = Math.min((time - lastTime) / 1000, 0.05);
             lastTime = time;
-
-            // Input
             handleInput();
-
-            // Update car
             updateCar(delta);
-
-            // Camera
             updateCamera();
-
-            // Sync
             syncTimer += delta * 1000;
             if (syncTimer > state.syncInterval && state.racing) {
                 syncTimer = 0;
                 syncCar();
             }
-
-            // Render
             renderer.render(scene, camera);
             requestAnimationFrame(gameLoop);
         }
 
         // ─── INIT ───
         generateTrack('speedway');
-        // Set initial camera
         camera.position.set(0, 12, 18);
         camera.lookAt(0, 0, 0);
-
-        // ─── START LOOP ───
         requestAnimationFrame(gameLoop);
 
-        // ─── ROUND RECT POLYFILL FOR CANVAS ───
         if (!CanvasRenderingContext2D.prototype.roundRect) {
             CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
                 if (r > w / 2) r = w / 2;
@@ -2182,9 +1878,8 @@
             };
         }
 
-        console.log('🏁 Turbo Race loaded!');
+        console.log('🦆 Duck-Kart loaded!');
         console.log('📖 Controls: WASD/Arrows to drive, C to toggle camera');
-        console.log('🎮 Host a race or join with a 3-letter code!');
     </script>
 </body>
 </html>
