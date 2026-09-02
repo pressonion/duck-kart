@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🏁 Turbo Race</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js">
+    </script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a12;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+
+        /* ─── UI OVERLAY ─── */
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        #ui>* {
+            pointer-events: auto;
+        }
+
+        /* ─── MENU ─── */
+        #menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(10, 10, 20, 0.92);
+            padding: 48px 56px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+            min-width: 380px;
+            backdrop-filter: blur(12px);
+        }
+        #menu h1 {
+            font-size: 52px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+            margin-bottom: 6px;
+        }
+        #menu .sub {
+            color: #8888aa;
+            font-size: 14px;
+            margin-bottom: 28px;
+            letter-spacing: 2px;
+        }
+        #menu .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        #menu button {
+            background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #fff;
+            padding: 14px 48px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            width: 100%;
+            max-width: 300px;
+            letter-spacing: 0.5px;
+        }
+        #menu button:hover {
+            background: linear-gradient(135deg, #3a3a5e, #2a2a4e);
+            transform: scale(1.02);
+            border-color: rgba(255, 200, 50, 0.3);
+        }
+        #menu button.primary {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+            border: none;
+        }
+        #menu button.primary:hover {
+            background: linear-gradient(135deg, #ffa82e, #ffe230);
+            transform: scale(1.02);
+        }
+        #menu .code-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 12px 0 8px;
+            justify-content: center;
+        }
+        #menu .code-input input {
+            background: #1a1a2e;
+            border: 2px solid #2a2a4e;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            width: 120px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #menu .code-input input:focus {
+            border-color: #ffd200;
+        }
+        #menu .code-input input::placeholder {
+            letter-spacing: 2px;
+            font-size: 14px;
+            color: #555;
+        }
+        #menu .info-text {
+            font-size: 13px;
+            color: #6666aa;
+            margin-top: 6px;
+        }
+        #menu .error-text {
+            color: #ff6b6b;
+            font-size: 13px;
+            margin-top: 4px;
+            min-height: 20px;
+        }
+
+        /* ─── LOBBY ─── */
+        #lobby {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 20, 0.92);
+            padding: 36px 48px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+            min-width: 400px;
+            display: none;
+            text-align: center;
+        }
+        #lobby h2 {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        #lobby .room-code {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: 12px;
+            color: #ffd200;
+            background: #1a1a2e;
+            padding: 8px 20px;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 8px 0 16px;
+        }
+        #lobby .players-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 12px 0 18px;
+            min-height: 40px;
+        }
+        #lobby .player-chip {
+            background: #2a2a4e;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        #lobby .player-chip .host-badge {
+            background: #ffd200;
+            color: #1a1a2e;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+        #lobby .player-chip .you-badge {
+            background: #4a9eff;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+        #lobby .map-vote {
+            margin: 16px 0 18px;
+        }
+        #lobby .map-vote h4 {
+            font-size: 14px;
+            color: #8888bb;
+            margin-bottom: 10px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        #lobby .map-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        #lobby .map-options button {
+            background: #1a1a2e;
+            border: 2px solid #2a2a4e;
+            color: #aaa;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #lobby .map-options button:hover {
+            border-color: #666;
+            color: #fff;
+        }
+        #lobby .map-options button.voted {
+            border-color: #ffd200;
+            color: #ffd200;
+            background: #2a2a3e;
+        }
+        #lobby .map-options button.winner {
+            border-color: #4ade80;
+            color: #4ade80;
+            background: #1a3a2a;
+        }
+        #lobby .lobby-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        #lobby .lobby-actions button {
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        #lobby .lobby-actions .start-btn {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #0a0a12;
+        }
+        #lobby .lobby-actions .start-btn:hover {
+            transform: scale(1.04);
+        }
+        #lobby .lobby-actions .start-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #lobby .lobby-actions .leave-btn {
+            background: #2a2a4e;
+            color: #fff;
+        }
+        #lobby .lobby-actions .leave-btn:hover {
+            background: #3a3a5e;
+        }
+        #lobby .lobby-status {
+            color: #8888bb;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* ─── HUD ─── */
+        #hud {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            pointer-events: none;
+            width: 90%;
+            max-width: 800px;
+            display: none;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        #hud .hud-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 14px 22px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-width: 140px;
+        }
+        #hud .hud-left .speed {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        #hud .hud-left .speed span {
+            font-size: 16px;
+            font-weight: 400;
+            color: #888;
+        }
+        #hud .hud-left .lap {
+            font-size: 16px;
+            color: #aaa;
+        }
+        #hud .hud-left .time {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4ade80;
+        }
+        #hud .hud-right {
+            background: rgba(0, 0, 0, 0.55);
+            padding: 14px 22px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: right;
+            min-width: 120px;
+        }
+        #hud .hud-right .pos {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffd200;
+        }
+        #hud .hud-right .pos span {
+            font-size: 14px;
+            font-weight: 400;
+            color: #888;
+        }
+        #hud .hud-right .best {
+            font-size: 14px;
+            color: #4ade80;
+        }
+        #hud .controls-hint {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 13px;
+            color: #555577;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        /* ─── COUNTDOWN ─── */
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 60px rgba(255, 200, 50, 0.3);
+            display: none;
+            pointer-events: none;
+            z-index: 100;
+            animation: none;
+        }
+        #countdown.go {
+            color: #4ade80;
+            text-shadow: 0 0 80px rgba(74, 222, 128, 0.4);
+        }
+
+        /* ─── FINISH ─── */
+        #finish {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 20, 0.94);
+            padding: 40px 56px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            text-align: center;
+            display: none;
+            backdrop-filter: blur(12px);
+            min-width: 340px;
+        }
+        #finish h2 {
+            font-size: 38px;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #ffd200, #f7971e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #finish .finish-time {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin: 8px 0;
+        }
+        #finish .finish-best {
+            font-size: 18px;
+            color: #4ade80;
+        }
+        #finish button {
+            margin-top: 18px;
+            background: #2a2a4e;
+            border: none;
+            color: #fff;
+            padding: 12px 36px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #finish button:hover {
+            background: #3a3a5e;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 600px) {
+            #menu {
+                padding: 32px 24px;
+                min-width: unset;
+                width: 92%;
+            }
+            #menu h1 {
+                font-size: 36px;
+            }
+            #lobby {
+                padding: 28px 20px;
+                min-width: unset;
+                width: 92%;
+            }
+            #lobby .room-code {
+                font-size: 30px;
+                letter-spacing: 8px;
+            }
+            #countdown {
+                font-size: 80px;
+            }
+            #hud .hud-left .speed {
+                font-size: 24px;
+            }
+            #hud .hud-left,
+            #hud .hud-right {
+                padding: 10px 16px;
+                min-width: 80px;
+            }
+            #finish {
+                padding: 28px 20px;
+                min-width: unset;
+                width: 92%;
+            }
+            #finish h2 {
+                font-size: 28px;
+            }
+        }
+
+        /* ─── UTILITY ─── */
+        .hidden {
+            display: none !important;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-8 {
+            gap: 8px;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .text-glow {
+            text-shadow: 0 0 40px rgba(255, 200, 50, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── UI CONTAINER ─── -->
+    <div id="ui">
+
+        <!-- MENU -->
+        <div id="menu">
+            <h1>🏁 Turbo Race</h1>
+            <div class="sub">★ PEER-TO-PEER RACING ★</div>
+            <div class="btn-group">
+                <button class="primary" id="btnHost">🚀 Host Race</button>
+                <div class="code-input">
+                    <input type="text" id="joinCode" maxlength="3" placeholder="ABC" spellcheck="false" />
+                    <button id="btnJoin">Join</button>
+                </div>
+                <div class="error-text" id="menuError"></div>
+                <button id="btnSinglePlayer">🏁 Single Player</button>
+            </div>
+            <div class="info-text">Enter a 3‑letter code to join a friend's race</div>
+        </div>
+
+        <!-- LOBBY -->
+        <div id="lobby">
+            <h2>🏁 Lobby</h2>
+            <div class="room-code" id="lobbyCode">———</div>
+            <div class="players-list" id="playersList"></div>
+            <div class="map-vote">
+                <h4>🗳️ VOTE FOR MAP</h4>
+                <div class="map-options" id="mapOptions"></div>
+            </div>
+            <div class="lobby-actions">
+                <button class="start-btn" id="btnStart">🏁 Start Race</button>
+                <button class="leave-btn" id="btnLeaveLobby">✕ Leave</button>
+            </div>
+            <div class="lobby-status" id="lobbyStatus">Waiting for players…</div>
+        </div>
+
+        <!-- COUNTDOWN -->
+        <div id="countdown">3</div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-left">
+                <div class="speed">0 <span>km/h</span></div>
+                <div class="lap">LAP 0 / 3</div>
+                <div class="time">⏱ 0.00s</div>
+            </div>
+            <div class="hud-right">
+                <div class="pos">P1 <span>of 1</span></div>
+                <div class="best">🏆 Best: —</div>
+            </div>
+            <div class="controls-hint">WASD / Arrow Keys &nbsp;·&nbsp; C = Camera</div>
+        </div>
+
+        <!-- FINISH -->
+        <div id="finish">
+            <h2>🏁 FINISH!</h2>
+            <div class="finish-time" id="finishTime">0.00s</div>
+            <div class="finish-best" id="finishBest">🏆 New Best!</div>
+            <button id="btnFinishMenu">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- ─── THREE.JS CANVAS ─── -->
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  IMPORTS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  DOM REFS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => document.querySelectorAll(s);
+
+        const menu = $('#menu');
+        const lobby = $('#lobby');
+        const lobbyCode = $('#lobbyCode');
+        const playersList = $('#playersList');
+        const mapOptions = $('#mapOptions');
+        const lobbyStatus = $('#lobbyStatus');
+        const btnStart = $('#btnStart');
+        const btnLeaveLobby = $('#btnLeaveLobby');
+        const btnHost = $('#btnHost');
+        const btnJoin = $('#btnJoin');
+        const joinCode = $('#joinCode');
+        const menuError = $('#menuError');
+        const btnSinglePlayer = $('#btnSinglePlayer');
+        const countdownEl = $('#countdown');
+        const hud = $('#hud');
+        const finish = $('#finish');
+        const finishTime = $('#finishTime');
+        const finishBest = $('#finishBest');
+        const btnFinishMenu = $('#btnFinishMenu');
+        const speedEl = $('#hud .speed');
+        const lapEl = $('#hud .lap');
+        const timeEl = $('#hud .time');
+        const posEl = $('#hud .pos');
+        const bestEl = $('#hud .best');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  TRACK DEFINITIONS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const TRACKS = [{
+            id: 'speedway',
+            name: '🏁 Speedway',
+            color: 0x2a4a7a,
+            groundColor: 0x3a7a3a,
+            waypoints: [
+                [-50, 0, 0],
+                [-35, 0, -35],
+                [0, 0, -45],
+                [35, 0, -35],
+                [50, 0, 0],
+                [35, 0, 35],
+                [0, 0, 45],
+                [-35, 0, 35]
+            ],
+            desc: 'High-speed oval'
+        }, {
+            id: 'forest',
+            name: '🌲 Forest Trail',
+            color: 0x2a6a2a,
+            groundColor: 0x1a4a1a,
+            waypoints: [
+                [-40, 0, -20],
+                [-20, 0, -40],
+                [10, 0, -35],
+                [35, 0, -15],
+                [40, 0, 10],
+                [20, 0, 35],
+                [-10, 0, 40],
+                [-35, 0, 20]
+            ],
+            desc: 'Winding forest path'
+        }, {
+            id: 'desert',
+            name: '🏜️ Desert Dash',
+            color: 0x8a7a4a,
+            groundColor: 0x6a5a3a,
+            waypoints: [
+                [-45, 0, 0],
+                [-25, 0, -30],
+                [5, 0, -40],
+                [35, 0, -25],
+                [45, 0, 0],
+                [35, 0, 25],
+                [5, 0, 40],
+                [-25, 0, 30]
+            ],
+            desc: 'Sandy desert circuit'
+        }];
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  GAME STATE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const state = {
+            // UI
+            screen: 'menu', // menu | lobby | racing | finish
+
+            // Player
+            playerName: 'Player',
+            isHost: false,
+            isSinglePlayer: false,
+
+            // Room
+            roomCode: '',
+            peer: null,
+            connections: [],
+            players: [], // { id, name, isHost, ... }
+
+            // Map
+            tracks: TRACKS,
+            selectedMapId: 'speedway',
+            votes: {}, // peerId -> mapId
+            mapVoteWinner: null,
+
+            // Racing
+            racing: false,
+            countdown: 0,
+            countdownActive: false,
+            lapCount: 0,
+            maxLaps: 3,
+            raceTime: 0,
+            bestTime: null,
+            finished: false,
+            startTime: null,
+
+            // Car
+            carPos: new THREE.Vector3(0, 0.4, 0),
+            carRot: 0,
+            speed: 0,
+            maxSpeed: 18,
+            acceleration: 0.4,
+            braking: 0.25,
+            friction: 0.03,
+            turnSpeed: 0.035,
+            steerInput: 0,
+            throttleInput: 0,
+
+            // Camera
+            cameraMode: 'third', // third | first
+            cameraAngle: 0,
+
+            // Network sync
+            lastSync: 0,
+            syncInterval: 50,
+            remoteCars: {}, // peerId -> { mesh, pos, rot, speed, lap, time }
+        };
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  THREE.JS SETUP
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 120, 220);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.set(0, 12, 18);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // ─── LIGHTS ───
+        const ambientLight = new THREE.AmbientLight(0x334466, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffeedd, 1.8);
+        dirLight.position.set(40, 60, 30);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 150;
+        dirLight.shadow.camera.left = -80;
+        dirLight.shadow.camera.right = 80;
+        dirLight.shadow.camera.top = 80;
+        dirLight.shadow.camera.bottom = -80;
+        scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
+        fillLight.position.set(-40, 20, -30);
+        scene.add(fillLight);
+
+        const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3a2a1a, 0.5);
+        scene.add(hemi);
+
+        // ─── GROUND ───
+        const groundGeo = new THREE.PlaneGeometry(300, 300);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x1a1a2e,
+            roughness: 0.9,
+            metalness: 0.0
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // ─── TRACK GROUP ───
+        let trackGroup = new THREE.Group();
+        scene.add(trackGroup);
+        let trackPath = null;
+        let checkpoints = [];
+        let startLine = null;
+
+        // ─── CAR ───
+        const carGroup = new THREE.Group();
+        scene.add(carGroup);
+
+        function buildCar() {
+            const g = new THREE.Group();
+
+            // Body
+            const bodyGeo = new THREE.BoxGeometry(1.0, 0.3, 2.0);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff2222, roughness: 0.3, metalness: 0.6 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.35;
+            body.castShadow = true;
+            g.add(body);
+
+            // Cabin
+            const cabGeo = new THREE.BoxGeometry(0.7, 0.25, 0.9);
+            const cabMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.2, metalness: 0.2 });
+            const cab = new THREE.Mesh(cabGeo, cabMat);
+            cab.position.set(0, 0.6, -0.15);
+            g.add(cab);
+
+            // Headlights
+            const hlMat = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffff88, emissiveIntensity: 0.3 });
+            for (let x of [-0.32, 0.32]) {
+                const hl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.08), hlMat);
+                hl.position.set(x, 0.3, 1.05);
+                g.add(hl);
+            }
+
+            // Taillights
+            const tlMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xff0000, emissiveIntensity: 0.5 });
+            for (let x of [-0.32, 0.32]) {
+                const tl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.08), tlMat);
+                tl.position.set(x, 0.3, -1.05);
+                g.add(tl);
+            }
+
+            // Wheels
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4, metalness: 0.7 });
+            const wheelPos = [
+                [-0.55, 0.12, 0.65],
+                [0.55, 0.12, 0.65],
+                [-0.55, 0.12, -0.65],
+                [0.55, 0.12, -0.65]
+            ];
+            for (const wp of wheelPos) {
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 12), wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(wp[0], wp[1], wp[2]);
+                g.add(wheel);
+                const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.13, 8), rimMat);
+                rim.rotation.x = Math.PI / 2;
+                rim.position.set(wp[0], wp[1], wp[2]);
+                g.add(rim);
+            }
+
+            // Spoiler
+            const spMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+            const sp = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.3), spMat);
+            sp.position.set(0, 0.55, -1.05);
+            g.add(sp);
+            const sp2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.04), spMat);
+            sp2.position.set(0, 0.45, -1.05);
+            g.add(sp2);
+
+            return g;
+        }
+
+        const carMesh = buildCar();
+        carGroup.add(carMesh);
+        carGroup.position.copy(state.carPos);
+        carGroup.scale.set(0.8, 0.8, 0.8);
+
+        // ─── REMOTE CARS ───
+        function createRemoteCar(color = 0x4488ff) {
+            const g = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.5 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 2.0), bodyMat);
+            body.position.y = 0.35;
+            body.castShadow = true;
+            g.add(body);
+            const cabMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.2, metalness: 0.2 });
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.25, 0.9), cabMat);
+            cab.position.set(0, 0.6, -0.15);
+            g.add(cab);
+            const wMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+            for (const wp of [
+                    [-0.55, 0.12, 0.65],
+                    [0.55, 0.12, 0.65],
+                    [-0.55, 0.12, -0.65],
+                    [0.55, 0.12, -0.65]
+                ]) {
+                const w = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 12), wMat);
+                w.rotation.x = Math.PI / 2;
+                w.position.set(wp[0], wp[1], wp[2]);
+                g.add(w);
+            }
+            g.scale.set(0.8, 0.8, 0.8);
+            return g;
+        }
+
+        // ─── NAMETAGS ───
+        const nameTagGroup = new THREE.Group();
+        scene.add(nameTagGroup);
+
+        function createNameTag(text, color = '#ffffff') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 256, 64);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.roundRect(8, 8, 240, 48, 16);
+            ctx.fill();
+            ctx.font = 'bold 28px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(text, 128, 36);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(3, 0.75, 1);
+            sprite.position.y = 2.2;
+            return sprite;
+        }
+
+        // ─── RESIZE ───
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  TRACK GENERATION
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function generateTrack(trackId) {
+            // Clear old
+            while (trackGroup.children.length) {
+                const c = trackGroup.children[0];
+                trackGroup.remove(c);
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) c.material.dispose();
+            }
+            checkpoints = [];
+            trackPath = null;
+
+            const track = TRACKS.find(t => t.id === trackId) || TRACKS[0];
+            const pts = track.waypoints.map(p => new THREE.Vector3(p[0], p[1] + 0.05, p[2]));
+
+            // Build CatmullRom
+            const curve = new THREE.CatmullRomCurve3(pts, true);
+            trackPath = curve;
+
+            // Sample points for road
+            const numSegments = 120;
+            const roadWidth = 3.2;
+            const points = [];
+            const tangents = [];
+            for (let i = 0; i <= numSegments; i++) {
+                const t = i / numSegments;
+                const p = curve.getPoint(t);
+                const tan = curve.getTangent(t);
+                points.push(p);
+                tangents.push(tan);
+            }
+
+            // Build road mesh
+            const vertices = [];
+            const indices = [];
+            const uvs = [];
+            const colors = [];
+
+            const colorMain = new THREE.Color(track.color);
+            const colorEdge = new THREE.Color(track.color).multiplyScalar(0.7);
+
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                const tan = tangents[i];
+                // perpendicular
+                const up = new THREE.Vector3(0, 1, 0);
+                const right = new THREE.Vector3().crossVectors(tan, up).normalize();
+                if (right.length() < 0.01) {
+                    right.set(1, 0, 0);
+                }
+                right.normalize();
+
+                const halfW = roadWidth / 2;
+                const left = p.clone().add(right.clone().multiplyScalar(-halfW));
+                const rightP = p.clone().add(right.clone().multiplyScalar(halfW));
+
+                // Slight height variation for road edge
+                const edgeHeight = 0.02;
+                vertices.push(left.x, left.y + edgeHeight, left.z);
+                vertices.push(rightP.x, rightP.y + edgeHeight, rightP.z);
+
+                const u = i / points.length;
+                uvs.push(u, 0);
+                uvs.push(u, 1);
+
+                const c = i % 2 === 0 ? colorMain : colorEdge;
+                colors.push(c.r, c.g, c.b);
+                colors.push(c.r, c.g, c.b);
+            }
+
+            for (let i = 0; i < points.length - 1; i++) {
+                const a = i * 2,
+                    b = i * 2 + 1,
+                    c = (i + 1) * 2,
+                    d = (i + 1) * 2 + 1;
+                indices.push(a, c, b);
+                indices.push(b, c, d);
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geo.computeVertexNormals();
+
+            const mat = new THREE.MeshStandardMaterial({
+                vertexColors: true,
+                roughness: 0.7,
+                metalness: 0.1,
+                side: THREE.DoubleSide,
+            });
+            const road = new THREE.Mesh(geo, mat);
+            road.receiveShadow = true;
+            road.castShadow = true;
+            trackGroup.add(road);
+
+            // ─── Road markings (center dashes) ───
+            const dashMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+            for (let i = 0; i < points.length; i += 4) {
+                const p = points[i];
+                const tan = tangents[i];
+                const up = new THREE.Vector3(0, 1, 0);
+                const right = new THREE.Vector3().crossVectors(tan, up).normalize();
+                if (right.length() < 0.01) right.set(1, 0, 0);
+                right.normalize();
+                const center = p.clone();
+                const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.15), dashMat);
+                dash.position.copy(center);
+                dash.position.y += 0.08;
+                const angle = Math.atan2(tan.x, tan.z);
+                dash.rotation.y = -angle;
+                dash.rotation.x = -Math.PI / 2;
+                trackGroup.add(dash);
+            }
+
+            // ─── Barriers ───
+            const barrierMat = new THREE.MeshStandardMaterial({
+                color: 0xcc4444,
+                roughness: 0.6,
+                metalness: 0.2
+            });
+            const barrierMat2 = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+
+            for (let side = -1; side <= 1; side += 2) {
+                for (let i = 0; i < points.length; i += 2) {
+                    const p = points[i];
+                    const tan = tangents[i];
+                    const up = new THREE.Vector3(0, 1, 0);
+                    const right = new THREE.Vector3().crossVectors(tan, up).normalize();
+                    if (right.length() < 0.01) right.set(1, 0, 0);
+                    right.normalize();
+                    const pos = p.clone().add(right.clone().multiplyScalar(side * (roadWidth / 2 + 0.3)));
+                    const barrier = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.8), barrierMat);
+                    barrier.position.copy(pos);
+                    barrier.position.y += 0.2;
+                    barrier.castShadow = true;
+                    trackGroup.add(barrier);
+                    // white stripe
+                    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.15), barrierMat2);
+                    stripe.position.copy(pos);
+                    stripe.position.y += 0.4;
+                    trackGroup.add(stripe);
+                }
+            }
+
+            // ─── Checkpoints ───
+            checkpoints = [];
+            const cpCount = 6;
+            for (let i = 0; i < cpCount; i++) {
+                const t = i / cpCount;
+                const p = curve.getPoint(t);
+                const tan = curve.getTangent(t);
+                const up = new THREE.Vector3(0, 1, 0);
+                const right = new THREE.Vector3().crossVectors(tan, up).normalize();
+                if (right.length() < 0.01) right.set(1, 0, 0);
+                right.normalize();
+
+                // Checkpoint gate
+                const cpMat = new THREE.MeshStandardMaterial({
+                    color: i === 0 ? 0x4ade80 : 0xffd200,
+                    transparent: true,
+                    opacity: 0.25,
+                    side: THREE.DoubleSide,
+                    roughness: 0.3,
+                    metalness: 0.1
+                });
+                const cp = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth * 0.9, 2.5), cpMat);
+                cp.position.copy(p);
+                cp.position.y += 1.2;
+                const angle = Math.atan2(tan.x, tan.z);
+                cp.rotation.y = -angle;
+                cp.rotation.x = -Math.PI / 2;
+                trackGroup.add(cp);
+
+                // Pillars
+                const pillarMat = new THREE.MeshStandardMaterial({ color: 0xffd200, roughness: 0.5 });
+                for (let s of [-1, 1]) {
+                    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 6), pillarMat);
+                    const offset = right.clone().multiplyScalar(s * roadWidth * 0.4);
+                    pillar.position.copy(p.clone().add(offset));
+                    pillar.position.y += 1.2;
+                    trackGroup.add(pillar);
+                }
+
+                checkpoints.push({
+                    position: p.clone(),
+                    tangent: tan.clone(),
+                    right: right.clone(),
+                    index: i,
+                    radius: roadWidth * 0.5
+                });
+            }
+
+            // ─── Start / Finish line ───
+            const startP = curve.getPoint(0);
+            const startTan = curve.getTangent(0);
+            const startUp = new THREE.Vector3(0, 1, 0);
+            const startRight = new THREE.Vector3().crossVectors(startTan, startUp).normalize();
+            if (startRight.length() < 0.01) startRight.set(1, 0, 0);
+            startRight.normalize();
+
+            // Finish line texture
+            const finishCanvas = document.createElement('canvas');
+            finishCanvas.width = 256;
+            finishCanvas.height = 64;
+            const fctx = finishCanvas.getContext('2d');
+            fctx.fillStyle = '#222';
+            fctx.fillRect(0, 0, 256, 64);
+            const colors2 = ['#ffffff', '#222222'];
+            for (let i = 0; i < 16; i++) {
+                fctx.fillStyle = colors2[i % 2];
+                fctx.fillRect(i * 16, 0, 16, 64);
+            }
+            fctx.fillStyle = '#ffd200';
+            fctx.font = 'bold 28px sans-serif';
+            fctx.textAlign = 'center';
+            fctx.textBaseline = 'middle';
+            fctx.fillText('🏁 FINISH', 128, 34);
+            const finishTex = new THREE.CanvasTexture(finishCanvas);
+            const finishMat2 = new THREE.MeshStandardMaterial({
+                map: finishTex,
+                transparent: true,
+                side: THREE.DoubleSide,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+            const finishMesh = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth * 0.9, 1.0), finishMat2);
+            finishMesh.position.copy(startP);
+            finishMesh.position.y += 0.5;
+            const fAngle = Math.atan2(startTan.x, startTan.z);
+            finishMesh.rotation.y = -fAngle;
+            finishMesh.rotation.x = -Math.PI / 2;
+            trackGroup.add(finishMesh);
+            startLine = startP.clone();
+
+            // ─── Scenery: trees or cacti ───
+            const isDesert = trackId === 'desert';
+            const isForest = trackId === 'forest';
+
+            for (let i = 0; i < 80; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 10 + Math.random() * 40;
+                const x = Math.cos(angle) * dist;
+                const z = Math.sin(angle) * dist;
+                // Check distance to track
+                let tooClose = false;
+                for (const p of points) {
+                    if (new THREE.Vector3(x, 0, z).distanceTo(p) < 5) { tooClose = true; break; }
+                }
+                if (tooClose) continue;
+
+                if (isDesert) {
+                    // Cactus
+                    const cMat = new THREE.MeshStandardMaterial({ color: 0x2a5a2a, roughness: 0.8 });
+                    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 0.8 + Math.random() * 1.2, 6), cMat);
+                    c.position.set(x, 0.4, z);
+                    c.castShadow = true;
+                    trackGroup.add(c);
+                    // arms
+                    for (let a = 0; a < 2; a++) {
+                        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.4 + Math.random() * 0.3, 5),
+                        cMat);
+                        arm.position.set(x + (Math.random() > 0.5 ? 0.3 : -0.3), 0.6 + Math.random() * 0.3, z);
+                        arm.rotation.z = (Math.random() > 0.5 ? 0.3 : -0.3);
+                        arm.castShadow = true;
+                        trackGroup.add(arm);
+                    }
+                } else if (isForest) {
+                    // Tree
+                    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.9 });
+                    const leafMat = new THREE.MeshStandardMaterial({ color: 0x2a7a2a, roughness: 0.8 });
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 1.0 + Math.random() * 0.8, 6),
+                    trunkMat);
+                    trunk.position.set(x, 0.5, z);
+                    trunk.castShadow = true;
+                    trackGroup.add(trunk);
+                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.8 + Math.random() * 0.6, 6, 6), leafMat);
+                    leaf.position.set(x, 1.6 + Math.random() * 0.8, z);
+                    leaf.castShadow = true;
+                    trackGroup.add(leaf);
+                } else {
+                    // Speedway: street lights or cones
+                    if (i % 3 === 0) {
+                        const coneMat = new THREE.MeshStandardMaterial({ color: 0xff6622, roughness: 0.7 });
+                        const cone = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 6), coneMat);
+                        cone.position.set(x, 0.3, z);
+                        cone.castShadow = true;
+                        trackGroup.add(cone);
+                    }
+                }
+            }
+
+            // ─── Ground color ───
+            ground.material.color.setHex(track.groundColor || 0x1a1a2e);
+
+            // ─── Store track data ───
+            state.currentTrackId = trackId;
+            state.checkpoints = checkpoints;
+            state.trackPath = trackPath;
+            state.startLine = startLine;
+
+            // Place car at start
+            const startPos = curve.getPoint(0);
+            const startTan2 = curve.getTangent(0);
+            state.carPos.copy(startPos);
+            state.carPos.y = 0.4;
+            state.carRot = Math.atan2(startTan2.x, startTan2.z);
+            carGroup.position.copy(state.carPos);
+            carGroup.rotation.y = state.carRot;
+
+            // Reset checkpoints
+            state.nextCheckpoint = 0;
+            state.lapCount = 0;
+            state.raceTime = 0;
+            state.finished = false;
+
+            return track;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  CAR PHYSICS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function updateCar(delta) {
+            if (!state.racing || state.countdownActive || state.finished) {
+                // Still allow steering in lobby?
+                return;
+            }
+
+            const dt = Math.min(delta, 0.05);
+            const s = state;
+
+            // Throttle
+            let accel = 0;
+            if (s.throttleInput > 0) {
+                accel = s.acceleration * s.throttleInput;
+            } else if (s.throttleInput < 0) {
+                accel = -s.braking * Math.abs(s.throttleInput);
+            }
+
+            // Friction
+            let friction = s.friction;
+            if (s.speed > 0) friction += 0.005;
+            else if (s.speed < 0) friction += 0.005;
+
+            // Speed
+            s.speed += accel * dt;
+            if (s.speed > s.maxSpeed) s.speed = s.maxSpeed;
+            if (s.speed < -s.maxSpeed * 0.4) s.speed = -s.maxSpeed * 0.4;
+
+            // Apply friction
+            if (s.speed > 0.01) s.speed -= friction * dt * 2;
+            else if (s.speed < -0.01) s.speed += friction * dt * 2;
+            else s.speed = 0;
+
+            // Steering
+            const steerAmount = s.steerInput * s.turnSpeed * (0.6 + 0.4 * (s.speed / s.maxSpeed));
+            s.carRot += steerAmount * dt * 4;
+
+            // Move
+            const moveX = Math.sin(s.carRot) * s.speed * dt;
+            const moveZ = Math.cos(s.carRot) * s.speed * dt;
+            s.carPos.x += moveX;
+            s.carPos.z += moveZ;
+
+            // Clamp to track (simple: stay on path)
+            if (s.trackPath) {
+                const nearest = s.trackPath.getPoint(
+                    s.trackPath.getClosestPoint(s.carPos, new THREE.Vector3())
+                );
+                const dist = s.carPos.distanceTo(nearest);
+                if (dist > 4.0) {
+                    // Push back toward track
+                    const dir = new THREE.Vector3().subVectors(nearest, s.carPos).normalize();
+                    s.carPos.x += dir.x * dt * 2.0;
+                    s.carPos.z += dir.z * dt * 2.0;
+                    s.speed *= 0.95;
+                }
+            }
+
+            // Checkpoint detection
+            if (s.checkpoints && s.checkpoints.length > 0 && !s.finished) {
+                const nextIdx = s.nextCheckpoint % s.checkpoints.length;
+                const cp = s.checkpoints[nextIdx];
+                const toCar = new THREE.Vector3().subVectors(s.carPos, cp.position);
+                const dist2 = toCar.length();
+                if (dist2 < cp.radius) {
+                    // Check direction
+                    const forward = new THREE.Vector3(Math.sin(s.carRot), 0, Math.cos(s.carRot));
+                    const dirToCp = new THREE.Vector3().subVectors(cp.position, s.carPos).normalize();
+                    const dot = forward.dot(dirToCp);
+                    if (dot > 0.1) {
+                        s.nextCheckpoint++;
+                        if (s.nextCheckpoint % s.checkpoints.length === 0) {
+                            s.lapCount++;
+                            if (s.lapCount >= s.maxLaps) {
+                                finishRace();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update car mesh
+            carGroup.position.copy(s.carPos);
+            carGroup.rotation.y = s.carRot;
+
+            // Tilt
+            const tilt = -s.steerInput * 0.12 * (s.speed / s.maxSpeed);
+            carGroup.rotation.z = tilt;
+
+            // Slight bounce
+            carGroup.position.y = 0.4 + Math.sin(Date.now() * 0.003 + s.carPos.x) * 0.02;
+
+            // Update HUD
+            const speedKmh = Math.abs(s.speed * 12);
+            speedEl.innerHTML = `${Math.round(speedKmh)} <span>km/h</span>`;
+            lapEl.textContent = `LAP ${Math.min(s.lapCount + 1, s.maxLaps)} / ${s.maxLaps}`;
+            if (s.startTime) {
+                const elapsed = (Date.now() - s.startTime) / 1000;
+                s.raceTime = elapsed;
+                timeEl.textContent = `⏱ ${elapsed.toFixed(2)}s`;
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  FINISH RACE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function finishRace() {
+            if (state.finished) return;
+            state.finished = true;
+            state.racing = false;
+
+            const time = state.raceTime;
+            finishTime.textContent = `${time.toFixed(2)}s`;
+
+            // Best time (localStorage)
+            const key = `best_${state.currentTrackId}`;
+            const stored = localStorage.getItem(key);
+            let isBest = false;
+            if (stored === null || time < parseFloat(stored)) {
+                localStorage.setItem(key, time.toString());
+                isBest = true;
+                state.bestTime = time;
+                finishBest.textContent = '🏆 NEW BEST TIME!';
+                finishBest.style.color = '#4ade80';
+            } else {
+                const best = parseFloat(stored);
+                state.bestTime = best;
+                finishBest.textContent = `🏆 Best: ${best.toFixed(2)}s`;
+                finishBest.style.color = '#ffd200';
+            }
+
+            // Update HUD
+            bestEl.textContent = isBest ? '🏆 New Best!' : `🏆 Best: ${(state.bestTime || 0).toFixed(2)}s`;
+
+            finish.style.display = 'block';
+            hud.style.display = 'none';
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  CAMERA
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function updateCamera() {
+            const pos = state.carPos;
+            const rot = state.carRot;
+
+            if (state.cameraMode === 'first') {
+                // First person
+                const height = 0.9;
+                const lookAhead = 3.0;
+                const camPos = pos.clone();
+                camPos.y += height;
+                camera.position.copy(camPos);
+                const target = pos.clone();
+                target.x += Math.sin(rot) * lookAhead;
+                target.z += Math.cos(rot) * lookAhead;
+                target.y += 0.2;
+                camera.lookAt(target);
+            } else {
+                // Third person
+                const dist = 6.5;
+                const height = 4.5;
+                const angle = rot;
+                const xOff = -Math.sin(angle) * dist;
+                const zOff = -Math.cos(angle) * dist;
+                camera.position.set(
+                    pos.x + xOff,
+                    pos.y + height,
+                    pos.z + zOff
+                );
+                camera.lookAt(pos.x, pos.y + 0.5, pos.z);
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  KEYBOARD
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+
+            if (e.key.toLowerCase() === 'c' && state.racing) {
+                state.cameraMode = state.cameraMode === 'third' ? 'first' : 'third';
+            }
+
+            if (e.key === ' ' && state.racing) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function handleInput() {
+            const s = state;
+            s.steerInput = 0;
+            s.throttleInput = 0;
+
+            if (!s.racing || s.countdownActive || s.finished) return;
+
+            if (keys['arrowleft'] || keys['a']) s.steerInput = -1;
+            if (keys['arrowright'] || keys['d']) s.steerInput = 1;
+            if (keys['arrowup'] || keys['w']) s.throttleInput = 1;
+            if (keys['arrowdown'] || keys['s']) s.throttleInput = -1;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  PEER.JS NETWORKING
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let peer = null;
+        let connections = [];
+        let isHost = false;
+        let roomCode = '';
+        let playerId = '';
+        let players = []; // { id, name, isHost }
+        let myVote = null;
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let code = '';
+            for (let i = 0; i < 3; i++) {
+                code += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return code;
+        }
+
+        function initPeer() {
+            return new Promise((resolve, reject) => {
+                const id = 'racer-' + Math.random().toString(36).substring(2, 8);
+                const p = new Peer(id, {
+                    debug: 0,
+                });
+                p.on('open', () => {
+                    playerId = p.id;
+                    resolve(p);
+                });
+                p.on('error', (err) => {
+                    reject(err);
+                });
+            });
+        }
+
+        // ─── HOST LOGIC ───
+        function hostRoom(code) {
+            roomCode = code.toUpperCase();
+            isHost = true;
+            state.isHost = true;
+            players = [{ id: playerId, name: state.playerName, isHost: true }];
+
+            peer.on('connection', (conn) => {
+                connections.push(conn);
+                conn.on('data', (data) => handlePeerData(conn, data));
+                // Send initial state
+                sendTo(conn, {
+                    type: 'init',
+                    players: players,
+                    roomCode: roomCode,
+                    hostId: playerId,
+                    trackId: state.currentTrackId || 'speedway',
+                });
+                // Add player
+                const newPlayer = { id: conn.peer, name: 'Racer', isHost: false };
+                // Wait for handshake
+            });
+
+            showLobby();
+            broadcastState();
+        }
+
+        // ─── JOIN LOGIC ───
+        async function joinRoom(code) {
+            roomCode = code.toUpperCase();
+            isHost = false;
+            state.isHost = false;
+
+            try {
+                const conn = peer.connect(roomCode);
+                connections.push(conn);
+                conn.on('data', (data) => handlePeerData(conn, data));
+                conn.on('open', () => {
+                    // Send join
+                    sendTo(conn, {
+                        type: 'join',
+                        id: playerId,
+                        name: state.playerName,
+                    });
+                });
+                conn.on('close', () => {
+                    removePlayer(conn.peer);
+                });
+                showLobby();
+            } catch (err) {
+                menuError.textContent = '❌ Could not join room. Check the code.';
+                console.error(err);
+            }
+        }
+
+        // ─── HANDLE PEER DATA ───
+        function handlePeerData(conn, data) {
+            const senderId = conn.peer;
+
+            switch (data.type) {
+                case 'join':
+                    if (isHost) {
+                        const newP = { id: data.id, name: data.name || 'Racer', isHost: false };
+                        players.push(newP);
+                        broadcastState();
+                        updateLobbyUI();
+                    }
+                    break;
+
+                case 'init':
+                    // Client received init
+                    players = data.players || [];
+                    state.currentTrackId = data.trackId || 'speedway';
+                    updateLobbyUI();
+                    break;
+
+                case 'state':
+                    // Host broadcasts state
+                    players = data.players || [];
+                    state.votes = data.votes || {};
+                    state.currentTrackId = data.trackId || state.currentTrackId;
+                    if (data.racing) {
+                        // Race started
+                        startRace();
+                    }
+                    updateLobbyUI();
+                    break;
+
+                case 'vote':
+                    if (isHost) {
+                        state.votes[senderId] = data.mapId;
+                        broadcastState();
+                        updateLobbyUI();
+                        checkVotes();
+                    }
+                    break;
+
+                case 'startRace':
+                    if (isHost) {
+                        // Host starts
+                        startCountdown();
+                    }
+                    break;
+
+                case 'carUpdate':
+                    // Remote car position
+                    if (senderId !== playerId) {
+                        const pos = new THREE.Vector3(data.x, data.y, data.z);
+                        const rot = data.rot;
+                        const speed = data.speed;
+                        const lap = data.lap;
+                        const time = data.time;
+                        updateRemoteCar(senderId, pos, rot, speed, lap, time);
+                    }
+                    break;
+
+                case 'playerLeft':
+                    removePlayer(data.id);
+                    break;
+
+                case 'finish':
+                    if (senderId !== playerId) {
+                        // Someone finished
+                        // Just show a message? We'll handle it.
+                    }
+                    break;
+            }
+        }
+
+        // ─── BROADCAST ───
+        function broadcastState() {
+            const data = {
+                type: 'state',
+                players: players,
+                votes: state.votes,
+                trackId: state.currentTrackId,
+                racing: state.racing,
+            };
+            for (const conn of connections) {
+                if (conn.open) {
+                    sendTo(conn, data);
+                }
+            }
+        }
+
+        function sendTo(conn, data) {
+            try {
+                conn.send(data);
+            } catch (e) { /* ignore */ }
+        }
+
+        function broadcast(data) {
+            for (const conn of connections) {
+                if (conn.open) {
+                    sendTo(conn, data);
+                }
+            }
+        }
+
+        // ─── PLAYER MANAGEMENT ───
+        function removePlayer(id) {
+            players = players.filter(p => p.id !== id);
+            delete state.votes[id];
+            if (state.remoteCars[id]) {
+                scene.remove(state.remoteCars[id].mesh);
+                if (state.remoteCars[id].tag) {
+                    scene.remove(state.remoteCars[id].tag);
+                }
+                delete state.remoteCars[id];
+            }
+            broadcastState();
+            updateLobbyUI();
+        }
+
+        function updateRemoteCar(id, pos, rot, speed, lap, time) {
+            if (!state.remoteCars[id]) {
+                // Create remote car
+                const color = 0x4488ff + (parseInt(id.substring(id.length - 3), 36) % 8) * 0x224466;
+                const mesh = createRemoteCar(color);
+                mesh.position.copy(pos);
+                mesh.rotation.y = rot;
+                scene.add(mesh);
+                const tag = createNameTag(players.find(p => p.id === id)?.name || 'Racer', '#88ccff');
+                tag.position.copy(pos);
+                tag.position.y += 2.0;
+                scene.add(tag);
+                state.remoteCars[id] = { mesh, tag, pos: pos.clone(), rot, speed, lap, time };
+            } else {
+                const rc = state.remoteCars[id];
+                rc.mesh.position.lerp(pos, 0.15);
+                rc.mesh.rotation.y = rot;
+                rc.pos.copy(pos);
+                rc.speed = speed;
+                rc.lap = lap;
+                rc.time = time;
+                if (rc.tag) {
+                    rc.tag.position.copy(pos);
+                    rc.tag.position.y += 2.2;
+                }
+            }
+        }
+
+        // ─── VOTING ───
+        function checkVotes() {
+            if (!isHost) return;
+            const allVoted = players.every(p => state.votes[p.id] !== undefined);
+            if (allVoted && players.length > 0) {
+                // Count votes
+                const counts = {};
+                for (const v of Object.values(state.votes)) {
+                    counts[v] = (counts[v] || 0) + 1;
+                }
+                let maxCount = 0;
+                let winner = null;
+                for (const [mapId, count] of Object.entries(counts)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        winner = mapId;
+                    }
+                }
+                if (winner) {
+                    state.mapVoteWinner = winner;
+                    state.currentTrackId = winner;
+                    // Update track
+                    generateTrack(winner);
+                    updateLobbyUI();
+                    // Enable start button
+                    btnStart.disabled = false;
+                    lobbyStatus.textContent = `✅ Map selected! Press "Start Race" to begin.`;
+                }
+            } else {
+                btnStart.disabled = true;
+                const voted = Object.keys(state.votes).length;
+                const total = players.length;
+                lobbyStatus.textContent = `🗳️ Waiting for votes... (${voted}/${total})`;
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  UI: LOBBY
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function showLobby() {
+            menu.style.display = 'none';
+            lobby.style.display = 'block';
+            lobbyCode.textContent = roomCode || '———';
+            updateLobbyUI();
+            // Show map options
+            mapOptions.innerHTML = '';
+            for (const track of TRACKS) {
+                const btn = document.createElement('button');
+                btn.textContent = track.name;
+                btn.dataset.mapId = track.id;
+                if (state.currentTrackId === track.id) {
+                    btn.classList.add('voted');
+                }
+                btn.addEventListener('click', () => {
+                    if (state.racing) return;
+                    myVote = track.id;
+                    state.votes[playerId] = track.id;
+                    // Send vote
+                    for (const conn of connections) {
+                        if (conn.open) {
+                            sendTo(conn, { type: 'vote', mapId: track.id });
+                        }
+                    }
+                    // If host, update local
+                    if (isHost) {
+                        state.votes[playerId] = track.id;
+                        broadcastState();
+                        checkVotes();
+                    }
+                    updateLobbyUI();
+                });
+                mapOptions.appendChild(btn);
+            }
+            // If host, show start
+            btnStart.style.display = isHost ? 'inline-block' : 'none';
+            btnStart.disabled = true;
+            if (isHost) {
+                lobbyStatus.textContent = `👑 You are the host. Waiting for players...`;
+            } else {
+                lobbyStatus.textContent = `🔗 Connected to ${roomCode}. Waiting for host...`;
+            }
+            // If single player, auto-start
+            if (state.isSinglePlayer) {
+                btnStart.style.display = 'none';
+                lobbyStatus.textContent = '🏁 Single player mode. Select a map and start!';
+                btnStart.disabled = false;
+                btnStart.textContent = '🏁 Start Race';
+                // Auto-select first map
+                if (!myVote) {
+                    myVote = TRACKS[0].id;
+                    state.votes[playerId] = myVote;
+                }
+                // Show start button for single player
+                const spStart = document.createElement('button');
+                spStart.className = 'start-btn';
+                spStart.textContent = '🏁 Start Race';
+                spStart.style.display = 'inline-block';
+                spStart.addEventListener('click', () => {
+                    if (state.currentTrackId) {
+                        generateTrack(state.currentTrackId);
+                        startCountdown();
+                    }
+                });
+                const actions = document.querySelector('.lobby-actions');
+                const existing = actions.querySelector('.sp-start');
+                if (existing) existing.remove();
+                spStart.classList.add('sp-start');
+                actions.prepend(spStart);
+            }
+        }
+
+        function updateLobbyUI() {
+            // Players
+            playersList.innerHTML = '';
+            for (const p of players) {
+                const chip = document.createElement('div');
+                chip.className = 'player-chip';
+                chip.innerHTML = `${p.name || 'Racer'}`;
+                if (p.isHost) {
+                    chip.innerHTML += ` <span class="host-badge">HOST</span>`;
+                }
+                if (p.id === playerId) {
+                    chip.innerHTML += ` <span class="you-badge">YOU</span>`;
+                }
+                // Vote indicator
+                const voted = state.votes[p.id];
+                if (voted) {
+                    const track = TRACKS.find(t => t.id === voted);
+                    if (track) {
+                        chip.innerHTML += ` 🗳️${track.name.replace(/[^\w]/g, '')}`;
+                    }
+                }
+                playersList.appendChild(chip);
+            }
+
+            // Map vote buttons
+            const mapBtns = mapOptions.querySelectorAll('button');
+            for (const btn of mapBtns) {
+                const id = btn.dataset.mapId;
+                btn.classList.remove('voted', 'winner');
+                if (state.votes[playerId] === id) {
+                    btn.classList.add('voted');
+                }
+                if (state.mapVoteWinner === id) {
+                    btn.classList.add('winner');
+                }
+                // Disable if racing
+                btn.disabled = state.racing;
+            }
+
+            // Start button
+            if (isHost) {
+                const allVoted = players.every(p => state.votes[p.id] !== undefined);
+                btnStart.disabled = !allVoted || state.racing || players.length < 1;
+                if (players.length < 1) {
+                    btnStart.disabled = true;
+                    lobbyStatus.textContent = '⏳ Waiting for players...';
+                }
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  COUNTDOWN & RACE START
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let countdownInterval = null;
+
+        function startCountdown() {
+            if (state.countdownActive) return;
+            state.countdownActive = true;
+            state.racing = false;
+            countdownEl.style.display = 'block';
+            countdownEl.className = '';
+
+            // Reset car position
+            if (state.trackPath) {
+                const startP = state.trackPath.getPoint(0);
+                state.carPos.copy(startP);
+                state.carPos.y = 0.4;
+                const startTan = state.trackPath.getTangent(0);
+                state.carRot = Math.atan2(startTan.x, startTan.z);
+                carGroup.position.copy(state.carPos);
+                carGroup.rotation.y = state.carRot;
+            }
+            state.speed = 0;
+            state.lapCount = 0;
+            state.nextCheckpoint = 0;
+            state.raceTime = 0;
+            state.finished = false;
+            state.startTime = null;
+
+            // Broadcast start
+            if (isHost) {
+                broadcast({ type: 'startRace' });
+            }
+
+            let count = 3;
+            countdownEl.textContent = count;
+            countdownEl.style.display = 'block';
+
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownEl.textContent = count;
+                    countdownEl.className = '';
+                } else if (count === 0) {
+                    countdownEl.textContent = 'GO!';
+                    countdownEl.className = 'go';
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownEl.style.display = 'none';
+                    state.countdownActive = false;
+                    state.racing = true;
+                    state.startTime = Date.now();
+                    lobby.style.display = 'none';
+                    hud.style.display = 'flex';
+                    finish.style.display = 'none';
+                    // Update HUD
+                    state.raceTime = 0;
+                    timeEl.textContent = '⏱ 0.00s';
+                    lapEl.textContent = `LAP 1 / ${state.maxLaps}`;
+                    if (state.isSinglePlayer) {
+                        const best = localStorage.getItem(`best_${state.currentTrackId}`);
+                        bestEl.textContent = best ? `🏆 Best: ${parseFloat(best).toFixed(2)}s` : '🏆 Best: —';
+                    } else {
+                        bestEl.textContent = '🏆 Best: —';
+                    }
+                    // Remove remote cars from lobby
+                    for (const id of Object.keys(state.remoteCars)) {
+                        scene.remove(state.remoteCars[id].mesh);
+                        if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
+                        delete state.remoteCars[id];
+                    }
+                }
+            }, 1000);
+        }
+
+        function startRace() {
+            // Called from network
+            startCountdown();
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  SINGLE PLAYER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function startSinglePlayer() {
+            state.isSinglePlayer = true;
+            state.isHost = true;
+            state.playerName = 'Solo Racer';
+            playerId = 'solo-' + Math.random().toString(36).substring(2, 6);
+            roomCode = 'SOLO';
+            players = [{ id: playerId, name: state.playerName, isHost: true }];
+            state.currentTrackId = TRACKS[0].id;
+            state.votes = {};
+            state.votes[playerId] = state.currentTrackId;
+            state.mapVoteWinner = state.currentTrackId;
+
+            // Generate track
+            generateTrack(state.currentTrackId);
+
+            // Show lobby with single player mode
+            menu.style.display = 'none';
+            lobby.style.display = 'block';
+            lobbyCode.textContent = 'SOLO';
+            updateLobbyUI();
+
+            // Show map options
+            mapOptions.innerHTML = '';
+            for (const track of TRACKS) {
+                const btn = document.createElement('button');
+                btn.textContent = track.name;
+                btn.dataset.mapId = track.id;
+                if (state.currentTrackId === track.id) {
+                    btn.classList.add('voted');
+                }
+                btn.addEventListener('click', () => {
+                    if (state.racing) return;
+                    state.currentTrackId = track.id;
+                    state.votes[playerId] = track.id;
+                    state.mapVoteWinner = track.id;
+                    generateTrack(track.id);
+                    updateLobbyUI();
+                });
+                mapOptions.appendChild(btn);
+            }
+
+            lobbyStatus.textContent = '🏁 Select a map and press "Start Race"';
+            btnStart.style.display = 'none';
+            // Add start button
+            const actions = document.querySelector('.lobby-actions');
+            let spBtn = actions.querySelector('.sp-start');
+            if (!spBtn) {
+                spBtn = document.createElement('button');
+                spBtn.className = 'start-btn sp-start';
+                spBtn.textContent = '🏁 Start Race';
+                spBtn.addEventListener('click', () => {
+                    if (state.currentTrackId) {
+                        generateTrack(state.currentTrackId);
+                        startCountdown();
+                    }
+                });
+                actions.prepend(spBtn);
+            }
+            spBtn.style.display = 'inline-block';
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  NETWORK SYNC (car positions)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function syncCar() {
+            if (!state.racing || state.finished) return;
+            const data = {
+                type: 'carUpdate',
+                x: state.carPos.x,
+                y: state.carPos.y,
+                z: state.carPos.z,
+                rot: state.carRot,
+                speed: state.speed,
+                lap: state.lapCount,
+                time: state.raceTime,
+            };
+            for (const conn of connections) {
+                if (conn.open) {
+                    sendTo(conn, data);
+                }
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  UI EVENT BINDINGS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        btnHost.addEventListener('click', async () => {
+            menuError.textContent = '';
+            try {
+                peer = await initPeer();
+                const code = generateRoomCode();
+                hostRoom(code);
+            } catch (err) {
+                menuError.textContent = '❌ Failed to host. Try again.';
+                console.error(err);
+            }
+        });
+
+        btnJoin.addEventListener('click', async () => {
+            const code = joinCode.value.trim().toUpperCase();
+            if (code.length !== 3 || !/^[A-Z]{3}$/.test(code)) {
+                menuError.textContent = '❌ Enter a valid 3-letter code (A-Z)';
+                return;
+            }
+            menuError.textContent = '';
+            try {
+                peer = await initPeer();
+                await joinRoom(code);
+            } catch (err) {
+                menuError.textContent = '❌ Could not join. Check the code or try again.';
+                console.error(err);
+            }
+        });
+
+        joinCode.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') btnJoin.click();
+            // Auto uppercase
+            setTimeout(() => {
+                joinCode.value = joinCode.value.toUpperCase().replace(/[^A-Z]/g, '');
+            }, 10);
+        });
+
+        btnSinglePlayer.addEventListener('click', () => {
+            peer = new Peer('solo-' + Math.random().toString(36).substring(2, 8), { debug: 0 });
+            peer.on('open', () => {
+                startSinglePlayer();
+            });
+            peer.on('error', () => {});
+        });
+
+        btnStart.addEventListener('click', () => {
+            if (isHost && state.mapVoteWinner) {
+                state.currentTrackId = state.mapVoteWinner;
+                generateTrack(state.currentTrackId);
+                startCountdown();
+            }
+        });
+
+        btnLeaveLobby.addEventListener('click', () => {
+            // Clean up
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            connections = [];
+            players = [];
+            state.racing = false;
+            state.countdownActive = false;
+            if (countdownInterval) clearInterval(countdownInterval);
+            lobby.style.display = 'none';
+            menu.style.display = 'block';
+            finish.style.display = 'none';
+            hud.style.display = 'none';
+            countdownEl.style.display = 'none';
+            // Remove remote cars
+            for (const id of Object.keys(state.remoteCars)) {
+                scene.remove(state.remoteCars[id].mesh);
+                if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
+                delete state.remoteCars[id];
+            }
+            state.isSinglePlayer = false;
+            state.isHost = false;
+            state.finished = false;
+        });
+
+        btnFinishMenu.addEventListener('click', () => {
+            finish.style.display = 'none';
+            hud.style.display = 'none';
+            menu.style.display = 'block';
+            state.racing = false;
+            state.finished = false;
+            state.isSinglePlayer = false;
+            state.isHost = false;
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            connections = [];
+            players = [];
+            for (const id of Object.keys(state.remoteCars)) {
+                scene.remove(state.remoteCars[id].mesh);
+                if (state.remoteCars[id].tag) scene.remove(state.remoteCars[id].tag);
+                delete state.remoteCars[id];
+            }
+            // Reset car
+            state.carPos.set(0, 0.4, 0);
+            state.carRot = 0;
+            carGroup.position.copy(state.carPos);
+            carGroup.rotation.y = 0;
+            state.speed = 0;
+            lobby.style.display = 'none';
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  GAME LOOP
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let lastTime = 0;
+        let syncTimer = 0;
+
+        function gameLoop(time) {
+            const delta = Math.min((time - lastTime) / 1000, 0.05);
+            lastTime = time;
+
+            // Input
+            handleInput();
+
+            // Update car
+            updateCar(delta);
+
+            // Camera
+            updateCamera();
+
+            // Sync
+            syncTimer += delta * 1000;
+            if (syncTimer > state.syncInterval && state.racing) {
+                syncTimer = 0;
+                syncCar();
+            }
+
+            // Render
+            renderer.render(scene, camera);
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ─── INIT ───
+        generateTrack('speedway');
+        // Set initial camera
+        camera.position.set(0, 12, 18);
+        camera.lookAt(0, 0, 0);
+
+        // ─── START LOOP ───
+        requestAnimationFrame(gameLoop);
+
+        // ─── ROUND RECT POLYFILL FOR CANVAS ───
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (r > w / 2) r = w / 2;
+                if (r > h / 2) r = h / 2;
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                return this;
+            };
+        }
+
+        console.log('🏁 Turbo Race loaded!');
+        console.log('📖 Controls: WASD/Arrows to drive, C to toggle camera');
+        console.log('🎮 Host a race or join with a 3-letter code!');
+    </script>
+</body>
+</html>
